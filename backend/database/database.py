@@ -24,3 +24,5 @@ class Database:
         except mysql.connector.Error as err:
             print(f"Error conecting to database: {err}")
             self.connection = None
+
+connection = Database()
