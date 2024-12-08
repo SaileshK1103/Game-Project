@@ -1,7 +1,6 @@
-import random
 import config
 from geopy.distance import geodesic
-from database.database import connection
+from database.database import db
 
 class Airport:
     def __init__(self, ident, data=None):
@@ -9,9 +8,9 @@ class Airport:
         if data is None:
             # Fetch airport details from DB
             sql = "SELECT ident, name, latitude_deg, longitude_deg FROM Airport WHERE ident=%s"
-            cursor = connection.cursor(dictionary=True)
-            cursor.execute(sql, (ident,))
-            result = cursor.fetchone()
+            cur = db.cursor(dictionary=True)
+            cur.execute(sql, (ident,))
+            result = cur.fetchone()
             if result:
                 self.name = result['name']
                 self.latitude = float(result['latitude_deg'])
