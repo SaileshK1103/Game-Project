@@ -38,7 +38,7 @@ if __name__ == "__main__":
         for port in in_range_airports:
             print(f"{port['name']} ({port['ident']}) ({round(game.current_airport.distance_to(Airport(port['ident'], port)))} km)")
 
-        dest_ident = input("\nEnter the ICAO of your destination: ").strip()
+        dest_ident = input("Enter the ICAO of your destination: ").strip()
 
         try:
             game.update_location(dest_ident)
