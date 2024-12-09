@@ -11,6 +11,7 @@ if __name__ == "__main__":
     game = FlightGame(player_name)
     game.assign_elements()
 
+
     while True:
         print(f"You are at {game.current_airport.name}. Money: €{game.money}, Range: {game.player_range} km")
 
