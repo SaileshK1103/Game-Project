@@ -1,10 +1,11 @@
+from backend import config
 from database.database import db
 from airport import Airport
 import random
 
 
 class FlightGame:
-    def __init__(self, player_name, start_money=10000, player_range=5000):
+    def __init__(self, player_name, start_money=config.start_money, player_range=config.player_range):
         self.player_name = player_name
         self.money = start_money
         self.player_range = player_range

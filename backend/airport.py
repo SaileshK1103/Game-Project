@@ -1,7 +1,5 @@
 from geopy.distance import geodesic
-
-from backend import config
-from backend.database.database import Database, db
+from backend.database.database import db
 
 
 class Airport:
@@ -15,7 +13,6 @@ class Airport:
             cur = db.cursor(dictionary=True)
             cur.execute(sql, (ident,))
             result = cur.fetchone()
-            print(result)
             if result:
                 self.name = result['name']
                 self.latitude = float(result['latitude_deg'])
@@ -26,12 +23,7 @@ class Airport:
             self.longitude = float(data['longitude_deg'])
 
     # Calculate distance between two airports
-    def calculate_distance(self, target):
+    def distance_to(self, target):
         coords_1 = (self.latitude, self.longitude)
         coords_2 = (target.latitude, target.longitude)
         return geodesic(coords_1, coords_2).km
-
-
-airport = Airport("EFHK")
-
-print(airport.name)

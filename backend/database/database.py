@@ -23,8 +23,9 @@ class Database:
                 charset=self.charset,
                 collation=self.collation
             )
+
+            #print("Database connection successful")
             return self.connection
-            print("Database connection successful")
         except mysql.connector.Error as err:
             print(f"Error connecting to database: {err}")
             self.connection = None
