@@ -1,17 +1,21 @@
-import random
-import config
 from geopy.distance import geodesic
-from database.database import connection
+
+from backend import config
+from backend.database.database import Database, db
+
 
 class Airport:
+
     def __init__(self, ident, data=None):
         self.ident = ident
+
         if data is None:
             # Fetch airport details from DB
             sql = "SELECT ident, name, latitude_deg, longitude_deg FROM Airport WHERE ident=%s"
-            cursor = connection.cursor(dictionary=True)
-            cursor.execute(sql, (ident,))
-            result = cursor.fetchone()
+            cur = db.cursor(dictionary=True)
+            cur.execute(sql, (ident,))
+            result = cur.fetchone()
+            print(result)
             if result:
                 self.name = result['name']
                 self.latitude = float(result['latitude_deg'])
@@ -26,3 +30,8 @@ class Airport:
         coords_1 = (self.latitude, self.longitude)
         coords_2 = (target.latitude, target.longitude)
         return geodesic(coords_1, coords_2).km
+
+
+airport = Airport("EFHK")
+
+print(airport.name)
