@@ -2,15 +2,13 @@ import os
 import mysql.connector
 from dotenv import load_dotenv
 
-from backend import config
-
 load_dotenv()
 class Database:
     def __init__(self):
         self.host = os.getenv('HOST')
         self.user = os.getenv('DB_USER')
         self.password = os.getenv('DB_PASSWORD')
-        self.database = os.getenv('DB_NAME')
+        self.database = os.getenv('DB_DATABASE')
         self.charset = "utf8mb4"
         self.collation = "utf8mb4_general_ci"
         self.connection = None
