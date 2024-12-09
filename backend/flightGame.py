@@ -43,6 +43,8 @@ class FlightGame:
 
         element_list = [elem['id'] for elem in elements]
         random.shuffle(element_list)
+        self.assigned_airports = set()
+        self.assigned_countries = set()
 
         for elem_id in element_list:
             available_ports = [
@@ -59,6 +61,21 @@ class FlightGame:
             sql = "INSERT INTO port_contents (game_id, airport, content_type, content_value) VALUES (%s, %s, %s, %s)"
             element_name = self.get_element_name_by_id(elem_id)
             cur.execute(sql, (self.game_id, selected_port['ident'], 'element', element_name))
+
+        available_ports = [
+            port for port in self.airports
+            if port['ident'] not in self.assigned_airports and port['iso_country'] not in self.assigned_countries
+        ]
+        if available_ports:
+            selected_port = random.choice(available_ports)
+            self.assigned_airports.add(selected_port['ident'])
+            if element_list and random.random() < 0.5:
+                lucky_box_element = element_list.pop()
+                element_name = self.get_element_name_by_id(lucky_box_element)
+            else:
+                lucky_box_element = None
+                sql="INSERT INTO port_contents (game_id, airport, content_type, content_value) VALUES (%s, %s, %s, %s)"
+                cur.execute(sql, (self.game_id, selected_port['ident'], 'lucky_box', element_name))
 
     @staticmethod
     def get_element_name_by_id(element_id):
@@ -105,15 +122,67 @@ class FlightGame:
             if content['content_type'] == 'element':
                 self.collected_elements.append(content['content_value'])
             elif content['content_type'] == 'lucky_box':
-                # Handle lucky box logic
+                print(f"A lucky box is available at {self.current_airport}.")
+                open_box = input("Do you want to open the lucky box for $100? (Y/N): ").strip().upper()
+
+                if open_box == 'Y':
+                    if self.money >= 100:
+                        self.money -= 100
+                        print(f"You opened the lucky box for $100. You have €{self.money} left.")
+
+                        # Handle potential empty lucky boxes
+                        if content['content_value']:
+                            print(f"The lucky box contains Element {content['content_value']}!")
+                            if content['content_value'] not in self.collected_elements:
+                                self.collected_elements.append(content['content_value'])
+                            else:
+                                print("You already have this element.")
+                        else:
+                            print("Unfortunately, this lucky box was empty.")
+
+                        # Mark the lucky box as found
+                        self.mark_content_found(content['id'])
+                    else:
+                        print("You don't have enough money to open the lucky box.")
                 pass
 
             # Mark content as found
             sql = "UPDATE port_contents SET found = 1 WHERE id = %s"
             cur.execute(sql, (content['id'],))
 
+    def mark_content_found(self, content_id):
+        sql = "UPDATE game SET found = 1 WHERE id = %s"
+        cur = db.cursor(dictionary=True)
+        cur.execute(sql, (content_id,))
+
+    def buy_extra_range(self):
+        while True:
+            range_to_buy = input("How much range do you want to buy? (in km, multiples of 100): ").strip()
+
+            try:
+                range_to_buy = int(range_to_buy)
+                if range_to_buy <= 0 or range_to_buy % 100 != 0:
+                    print("Please enter a valid amount (must be a positive multiple of 100).")
+                    continue
+            except ValueError:
+                print("Invalid input. Please enter a number.")
+                continue
+
+            # Calculate cost
+            cost = (range_to_buy // 200) * 100
+            # Check if the player has enough money
+            if cost > self.money:
+                print(f"You don't have enough money. You need ${cost} but only have ${self.money}.")
+                continue
+            # Deduct the cost and update the range
+            self.money -= cost
+            self.player_range += range_to_buy
+            print(f"You bought an extra {range_to_buy}km of range.")
+            print(f"New range: {self.player_range}km, Remaining money: ${self.money}")
+            break
+
     def is_game_won(self):
         required_elements = ['A', 'B', 'C', 'D']
-        return all(elem in self.collected_elements for elem in required_elements)
+        return all(elem in self.collected_elements for elem in required_elements);
 
 
