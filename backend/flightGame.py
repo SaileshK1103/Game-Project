@@ -2,8 +2,8 @@ import config
 from random import random, shuffle, choice
 from geopy.distance import geodesic
 from airport import Airport
-from database.database import db
-db.connect()
+from database.database import db, Database
+
 class FlightGame:
     def __init__(self, player_name, start_money=10000, player_range=5000):
         self.player_name = player_name
@@ -11,7 +11,7 @@ class FlightGame:
         self.player_range = player_range
         self.collected_elements = []
         self.airports = self.get_airports()
-        self.start_airport = Airport(self.airports[0]['ident'], self.airports[0])
+        self.start_airport = Airport(self.airports[0][0])
         self.current_airport = self.start_airport
         self.game_id = self.create_game()
         self.assigned_airports = {self.start_airport.ident}
@@ -81,10 +81,11 @@ class FlightGame:
     def update_location(self):
         sql = "UPDATE game SET location = %s, player_range = %s WHERE id = %s"
         cur = db.cursor(dictionary=True)
-        cur.execute(sql, self.player_range, self.money, self.game_id))
+        cur.execute(sql, self.player_range, self.money, self.game_id)
 
     def mark_content_found(content_id):
         sql = "UPDATE port_contents SET found = 1 WHERE id = %s"
         cur = db.cursor(dictionary=True)
         cur.execute(sql, (content_id,))
         db.commit()
+
