@@ -23,16 +23,16 @@ class Database:
                 charset=self.charset,
                 collation=self.collation
             )
+            return self.connection
             print("Database connection successful")
         except mysql.connector.Error as err:
             print(f"Error connecting to database: {err}")
             self.connection = None
 
-    def cursor(self, **kwargs):
+    def cursor(self, dictionary=False):
         if self.connection is None:
-            raise Exception("Database not connected. Call the connect() method first.")
-        return self.connection.cursor();
+            raise ConnectionError("Database is not connected. Call `connect()` first.")
+        return self.connection.cursor(dictionary=dictionary)
 
 db = Database()
 db.connect()
-cur = db.cursor(dictionary=True)
