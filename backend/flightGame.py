@@ -92,6 +92,11 @@ class FlightGame:
         cur = db.cursor(dictionary=True)
         cur.execute(sql, (destination.ident, self.player_range, self.game_id))
 
+    def mark_content_found(self, content_id):
+        sql = "UPDATE game SET found = 1 WHERE id = %s"
+        cur = db.cursor(dictionary=True)
+        cur.execute(sql, (content_id,))
+
     def collect_content(self):
         # Check for content at the current airport
         sql = """SELECT id, content_type, content_value 
@@ -104,12 +109,59 @@ class FlightGame:
             if content['content_type'] == 'element':
                 self.collected_elements.append(content['content_value'])
             elif content['content_type'] == 'lucky_box':
-                # Handle lucky box logic
+                print(f"A lucky box is available at {self.current_airport}.")
+                open_box = input("Do you want to open the lucky box for $100? (Y/N): ").strip().upper()
+
+                if open_box == 'Y':
+                    if self.money >= 100:
+                        self.money -= 100
+                        print(f"You opened the lucky box for $100. You have €{self.money} left.")
+
+                        # Handle potential empty lucky boxes
+                        if content['content_value']:
+                            print(f"The lucky box contains Element {content['content_value']}!")
+                            if content['content_value'] not in self.collected_elements:
+                                self.collected_elements.append(content['content_value'])
+                            else:
+                                print("You already have this element.")
+                        else:
+                            print("Unfortunately, this lucky box was empty.")
+
+                        # Mark the lucky box as found
+                        self.mark_content_found(content['id'])
+                    else:
+                        print("You don't have enough money to open the lucky box.")
                 pass
 
             # Mark content as found
             sql = "UPDATE port_contents SET found = 1 WHERE id = %s"
             cur.execute(sql, (content['id'],))
+
+    def buy_extra_range(self):
+        while True:
+            range_to_buy = input("How much range do you want to buy? (in km, multiples of 100): ").strip()
+
+            try:
+                range_to_buy = int(range_to_buy)
+                if range_to_buy <= 0 or range_to_buy % 100 != 0:
+                    print("Please enter a valid amount (must be a positive multiple of 100).")
+                    continue
+            except ValueError:
+                print("Invalid input. Please enter a number.")
+                continue
+
+            # Calculate cost
+            cost = (range_to_buy // 200) * 100
+            # Check if the player has enough money
+            if cost > self.money:
+                print(f"You don't have enough money. You need ${cost} but only have ${self.money}.")
+                continue
+            # Deduct the cost and update the range
+            self.money -= cost
+            self.player_range += range_to_buy
+            print(f"You bought an extra {range_to_buy}km of range.")
+            print(f"New range: {self.player_range}km, Remaining money: ${self.money}")
+            break
 
     def is_game_won(self):
         required_elements = ['A', 'B', 'C', 'D']
