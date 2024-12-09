@@ -1,24 +1,20 @@
 import config
 from geopy.distance import geodesic
-from database.database import db
+from database.database import Database, db
 
 class Airport:
-    def __init__(self, ident, data=None):
+    def __init__(self, ident):
         self.ident = ident
-        if data is None:
-            # Fetch airport details from DB
-            sql = "SELECT ident, name, latitude_deg, longitude_deg FROM Airport WHERE ident=%s"
-            cur = db.cursor(dictionary=True)
-            cur.execute(sql, (ident,))
-            result = cur.fetchone()
-            if result:
-                self.name = result['name']
-                self.latitude = float(result['latitude_deg'])
-                self.longitude = float(result['longitude_deg'])
-        else:
-            self.name = data['name']
-            self.latitude = float(data['latitude_deg'])
-            self.longitude = float(data['longitude_deg'])
+
+        sql = "SELECT ident, name, latitude_deg, longitude_deg FROM Airport WHERE ident=%s"
+        cur = db.cursor(dictionary=True)
+        cur.execute(sql, (ident,))
+        result = cur.fetchone()
+        if result:
+                self.name = result[1]
+                self.latitude = float(result[2])
+                self.longitude = float(result[3])
+
 
     # Calculate distance between two airports
     def calculate_distance(self, target):
