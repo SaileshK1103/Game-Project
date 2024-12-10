@@ -61,7 +61,7 @@ class FlightGame:
             sql = "INSERT INTO port_contents (game_id, airport, content_type, content_value) VALUES (%s, %s, %s, %s)"
             element_name = self.get_element_name_by_id(elem_id)
             cur.execute(sql, (self.game_id, selected_port['ident'], 'element', element_name))
-
+        # assign a lucky box to one airport
         available_ports = [
             port for port in self.airports
             if port['ident'] not in self.assigned_airports and port['iso_country'] not in self.assigned_countries
@@ -69,14 +69,12 @@ class FlightGame:
         if available_ports:
             selected_port = random.choice(available_ports)
             self.assigned_airports.add(selected_port['ident'])
-            if element_list and random.random() < 0.5:
-                lucky_box_element = element_list.pop()
-                element_name = self.get_element_name_by_id(lucky_box_element)
-            else:
-                lucky_box_element = None
-                sql="INSERT INTO port_contents (game_id, airport, content_type, content_value) VALUES (%s, %s, %s, %s)"
-                cur.execute(sql, (self.game_id, selected_port['ident'], 'lucky_box', element_name))
-
+            if available_ports:
+                selected_port = random.choice(available_ports)
+                self.assigned_airports.add(selected_port['ident'])
+                lucky_box_element = random.choice([None] + element_list)  # Element or empty box
+                sql = "INSERT INTO port_contents (game_id, airport, content_type, content_value) VALUES (%s, %s, %s, %s)"
+                cur.execute(sql, (self.game_id, selected_port['ident'], 'lucky_box', lucky_box_element))
     @staticmethod
     def get_element_name_by_id(element_id):
         # Fetch element name by ID
@@ -93,7 +91,14 @@ class FlightGame:
             airport_obj = Airport(port['ident'], port)
             distance = self.current_airport.distance_to(airport_obj)
             if distance <= self.player_range and distance != 0:
-                in_range.append(port)
+                in_range.append({
+                    "ident": port['ident'],
+                    "name": port['name'],
+                    "iso_country": port['iso_country'],
+                    "latitude_deg": port['latitude_deg'],
+                    "longitude_deg": port['longitude_deg'],
+                    "distance":distance
+                })
         return in_range
 
     def update_location(self, destination_ident):
@@ -144,7 +149,9 @@ class FlightGame:
                         self.mark_content_found(content['id'])
                     else:
                         print("You don't have enough money to open the lucky box.")
-                pass
+                else:
+                    print("You chose not to open the lucky box.")
+            self.mark_content_found(content['id'])
 
             # Mark content as found
             sql = "UPDATE port_contents SET found = 1 WHERE id = %s"
@@ -155,34 +162,24 @@ class FlightGame:
         cur = db.cursor(dictionary=True)
         cur.execute(sql, (content_id,))
 
-    def buy_extra_range(self):
-        while True:
-            range_to_buy = input("How much range do you want to buy? (in km, multiples of 100): ").strip()
+    def buy_extra_range(self,range_to_buy):
+        # Calculate cost (based on range_to_buy)
+        cost = (range_to_buy // 200) * 100
 
-            try:
-                range_to_buy = int(range_to_buy)
-                if range_to_buy <= 0 or range_to_buy % 100 != 0:
-                    print("Please enter a valid amount (must be a positive multiple of 100).")
-                    continue
-            except ValueError:
-                print("Invalid input. Please enter a number.")
-                continue
+        if cost > self.money:
+            raise Exception("Insufficient funds.")
 
-            # Calculate cost
-            cost = (range_to_buy // 200) * 100
-            # Check if the player has enough money
-            if cost > self.money:
-                print(f"You don't have enough money. You need ${cost} but only have ${self.money}.")
-                continue
-            # Deduct the cost and update the range
-            self.money -= cost
-            self.player_range += range_to_buy
-            print(f"You bought an extra {range_to_buy}km of range.")
-            print(f"New range: {self.player_range}km, Remaining money: ${self.money}")
-            break
-
+        # Deduct the cost from money and add range
+        self.money -= cost
+        self.player_range += range_to_buy
+        print(f"Bought extra {range_to_buy} km range.")
     def is_game_won(self):
-        required_elements = ['A', 'B', 'C', 'D']
+        #required_elements = ['A', 'B', 'C', 'D']
+        # Fetch required elements for the game from the database
+        sql = "SELECT element_name FROM game_requirements WHERE game_id = %s"
+        cur = db.cursor(dictionary=True)
+        cur.execute(sql, (self.game_id,))
+        required_elements = [row['element_name'] for row in cur.fetchall()]
         return all(elem in self.collected_elements for elem in required_elements);
 
 

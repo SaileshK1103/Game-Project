@@ -16,16 +16,8 @@ def start_game():
         """
     data = request.get_json()
     player_name = data.get('player_name')
-    if not data:
-        return jsonify({"error": "No data provided"}), 400
-
-    player_name = data.get('player_name')
-
     if not player_name:
         return jsonify({"error": "Player name is required"}), 400
-
-    '''if not player_name:
-        return jsonify({"error": "Player name is required"}), 400'''
 
     #Initialize the game
     game = FlightGame(player_name)
@@ -128,6 +120,29 @@ def end_game():
         return jsonify({"error": "Invalid or missing game_id"}), 400
     del active_games[int(game_id)]
     return jsonify({"success": True})
+
+@app.route('/buy_extra_range', methods=['POST'])
+def buy_extra_range():
+    """
+            Buy extra range.
+            Request Body: { "game_id": int, "range_to_buy": int }
+            Response: { "success": bool, "player_range": float, "money": int }
+            """
+    data = request.get_json()
+    game_id = data.get('game_id')
+    range_to_buy = data.get('range_to_buy')
+    if not game_id or int(game_id) not in active_games:
+        return jsonify({"error": "Invalid or missing game_id"}), 400
+    game = active_games[int(game_id)]
+    try:
+        game.buy_extra_range(range_to_buy)
+        return jsonify({
+            "success": True,
+            "player_range": game.player_range,
+            "money": game.money
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
 
 if __name__ == '__main__':
     db.connect()
